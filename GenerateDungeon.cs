@@ -47,7 +47,6 @@ public class GenerateDungeon : MonoBehaviour
     //if you have 2 meters high and 3 meters wide wall prefab, put 2 in prefabHeight and 3 in prefab width at the inspector
     public float prefabHeight;
     public float prefabWidth;
-    public float prefabDepth;
     public int minRooms;
     public int maxRooms;
     public int minRoomWidth; // in meters 10 = 10 meter wide building
@@ -338,15 +337,35 @@ public class GenerateDungeon : MonoBehaviour
 
             if (randomStairs == true)
                 optStairs = Random.Range(0, 4);
-                  
+            for (int i = 0; i < 24; i++)
+            {
+                //pick a number from 1 to 100, if it is less than roomPercentage for an example 75, build the wall, if its bigger, don't
+                RndChanceWallList.Add(Random.Range(1, 101));
+            }
+    
+            int roomWallW = Random.Range(Mathf.RoundToInt(roomWidth / 2) - 1, Mathf.RoundToInt(roomWidth / 2) + 1);
+            int roomWallL = Random.Range(Mathf.RoundToInt(roomLength / 2) - 1, Mathf.RoundToInt(roomLength / 2) + 1);
+
+            int wallIntersectionL = Random.Range(Mathf.RoundToInt(roomLength / 2 - Random.Range(0, 3)), Mathf.RoundToInt(roomLength / 2) + Random.Range(0, 3));
+            int wallIntersectionW = Random.Range(Mathf.RoundToInt(roomWidth / 2) - Random.Range(0, 3), Mathf.RoundToInt(roomWidth / 2) + Random.Range(0, 3));
+            int doorW = Random.Range(oldIntW, wallIntersectionW);
+            int doorL = Random.Range(oldIntL, wallIntersectionL);
+        
 
             if (h != 0 && h != roomHeight - 1)
             {
+                secRowDoorBool = false;
+                thirdRowDoorBool = false;
+                secColDoorBool = false;
+                thirdColDoorBool = false;
+               // print("roomWidth: " + roomWidth + " / roomLength: " + roomLength);
+
                 if (buildingStyleList.Count > 0)
                 {
                     int bsl = Random.Range(0, buildingStyleList.Count);
                     if (buildingStyleList[bsl].floorStyleList.Count > 0)
                     {
+                        
                         int fsl = Random.Range(0, buildingStyleList[bsl].floorStyleList.Count);
                         buildingN = bsl;
                         floorN = fsl;
@@ -359,6 +378,7 @@ public class GenerateDungeon : MonoBehaviour
                         roomInnerWallPrefab = buildingStyleList[bsl].floorStyleList[fsl].wall;
                         roomInnerDoorPrefab = buildingStyleList[bsl].floorStyleList[fsl].door;
 
+                        
                         floorPrefabList.Clear();
                         wallPrefabList.Clear();
                         //floor prefabs
@@ -373,7 +393,57 @@ public class GenerateDungeon : MonoBehaviour
                         }
                     }
                 }
-               
+                if (roomLength > 3 && roomLength < 8)
+                {
+                    counterL = 1;
+                    firstZwall = Random.Range(Mathf.RoundToInt(Mathf.RoundToInt(roomLength / 2)), Mathf.RoundToInt(roomLength / 2 + 1));
+                    secondZwall = Mathf.RoundToInt(roomLength);
+                    thirdZwall = 0;
+                }
+
+                else if (roomLength >= 8 && roomLength < 12)
+                {
+                    counterL = 3;
+                    firstZwall = Random.Range(Mathf.RoundToInt(Mathf.RoundToInt(roomLength / 3)), Mathf.RoundToInt(roomLength / 3 + 1));
+                    secondZwall = Random.Range(Mathf.RoundToInt((firstZwall * 2f) - 1), Mathf.RoundToInt((firstZwall * 2f)));
+                    thirdZwall = Mathf.RoundToInt(roomLength);
+                }
+
+                else if (roomLength >= 12)
+                {
+                    counterL = 4;
+                    firstZwall = Random.Range(Mathf.RoundToInt(Mathf.RoundToInt(roomLength / 3 - 1)), Mathf.RoundToInt(roomLength / 3));
+                    secondZwall = Random.Range(Mathf.RoundToInt((firstZwall * 1.7f) - 1), Mathf.RoundToInt((firstZwall * 1.7f)));
+                    thirdZwall =  Random.Range((secondZwall + firstZwall) - 1, (secondZwall + firstZwall));
+                }
+
+                if (roomWidth > 3 && roomWidth < 8)
+                {
+                    counterW = 2;
+                    firstXwall = Random.Range(Mathf.RoundToInt(roomWidth / 2), Mathf.RoundToInt(roomWidth / 2 + 1));
+                    secondXwall = Mathf.RoundToInt(roomWidth);
+                    thirdXwall = 0;
+                }
+
+                else if (roomWidth >= 8 && roomWidth < 12)
+                {
+                    counterW = 3;
+                    firstXwall = Random.Range(Mathf.RoundToInt(Mathf.RoundToInt(roomWidth / 3)), Mathf.RoundToInt(roomWidth / 3 + 1));
+                    secondXwall = Random.Range(Mathf.RoundToInt((firstXwall * 2f) - 1), Mathf.RoundToInt((firstXwall * 2f)));
+                    thirdXwall = Mathf.RoundToInt(roomWidth); ;
+                }
+
+                else if (roomWidth >= 12)
+                {
+                    counterW = 4;
+                    firstXwall = Random.Range(Mathf.RoundToInt(Mathf.RoundToInt(roomWidth / 3 - 1)), Mathf.RoundToInt(roomWidth / 3));
+                    secondXwall = Random.Range(Mathf.RoundToInt((firstXwall * 1.7f) - 1), Mathf.RoundToInt((firstXwall * 1.7f)));
+                    thirdXwall = Random.Range((secondXwall + firstXwall) - 1, (secondXwall + firstXwall));
+
+                }
+                //choose door random position along the walls
+                RandomizeInnerDoors();
+
                 for (int l = 0; l < roomLength; l++)
                 {
                     //random door placement - randomDoorPosF for front door, randomDoorPosB for back door, a random number between 1 and room width is generated
@@ -381,8 +451,9 @@ public class GenerateDungeon : MonoBehaviour
 
                     for (int w = 0; w < roomWidth; w++)
                     {
+
                         //create the building's floor, ceilling
-                        if (h == 0 || h == roomHeight - 1)
+                        if (h == 0 || h == roomHeight - 1 || l == 0 || l == roomLength - 1 || w == 0 || w == roomWidth - 1)
                         {
                             // spawn floor 
                             if (h == 0)
@@ -400,11 +471,15 @@ public class GenerateDungeon : MonoBehaviour
                             allPrefabsList.Add(newMarker);
                             newMarker.name = "Ceilling" + buildingsCreated;
                             }
-                                  
+                                   
+                            
                         }
                         //spawn outer walls and windows
                          if (l == 0 || l == roomLength - 1 || w == 0 || w == roomWidth - 1)
                         {
+                           // print("l: " + l + " /w: " + w + " /a wall or a window should be built");
+                            //spot reserved for door, dont build anything
+                            // if (w == 0 && l == doorNum && h == 1) { }
                            
                                 int windowChance = Random.Range(1, 100);
                                 if (windowChance <= windowProbability)
@@ -510,9 +585,484 @@ public class GenerateDungeon : MonoBehaviour
                                 allPrefabsList.Add(newMarker);
                         }
                       
+                     //spawn inner walls and doors
+                        if (l == firstZwall && w < firstXwall  && RndChanceWallList[0] <= roomPercentage)
+                        {
 
-                      // spawn prefabs
+                            if(w == innerDoorsList[0].doorXpos)
+                            {
+                                BuildObj("0InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                                
+                            }
+                            else
+                            BuildObj("0InnerHorWall",w,h,l, roomInnerWallPrefab);
 
+                            horWall = true;
+                            //print("l == firstZwall && w < firstXwall, building 0 innerHorWall");
+                        }
+                        //building horizontal wall toward the second intersection point
+                        if (l == firstZwall && w >= firstXwall && w < secondXwall && RndChanceWallList[1] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[1].doorXpos)
+                            {
+                                BuildObj("1InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("1InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == firstZwall && w >= firstXwall && w < secondXwall, building 1 innerHorWall");
+                        }
+                        //building horizontal wall toward the third intersection point
+                        if (l == firstZwall && w >= secondXwall && w < thirdXwall  && RndChanceWallList[2] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[2].doorXpos)
+                            {
+                                BuildObj("2InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("2InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            //  print("l == firstZwall && w >= secondXwall && w < thirdXwall, building 2 innerHorWall");
+                        }
+                        //building last wall horizontal wall after the third intersection point toward the building's outer wall
+                        if (l == firstZwall && w >= thirdXwall && thirdXwall != 0  && RndChanceWallList[3] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[3].doorXpos)
+                            {
+                                BuildObj("3InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("3InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == firstZwall && w >= thirdXwall, building 3 innerHorWall");
+                        }
+                        //building second horizontal wall toward the first intersection point
+                        if (l == secondZwall && w < firstXwall && secondZwall != 0 && RndChanceWallList[4] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[4].doorXpos)
+                            {
+                                BuildObj("4InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("4InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == secondZwall && w < firstXwall, building 4 innerHorWall");
+                        }
+                        //building second horizontal wall toward the second intersection point
+                        if (l == secondZwall && w >= firstXwall && w < secondXwall && secondZwall != 0 && RndChanceWallList[5] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[5].doorXpos)
+                            {
+                                BuildObj("5InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("5InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == secondZwall && w >= firstXwall && w < secondXwall, building 5 innerHorWall");
+                        }
+                        //building second horizontal wall toward the third intersection point
+                        if (l == secondZwall && w >= secondXwall && w < thirdXwall && secondZwall != 0 && RndChanceWallList[6] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[6].doorXpos)
+                            {
+                                BuildObj("6InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("6InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == secondZwall && w > secondXwall && w < thirdXwall, building 6 innerHorWall");
+                        }
+                        //building second horizontal wall toward after the third intersection point toward the building's outer wall
+                        if (l == secondZwall && w >= thirdXwall && secondZwall != 0 && thirdXwall != 0 && RndChanceWallList[7] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[7].doorXpos)
+                            {
+                                BuildObj("7InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("7InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == secondZwall && w >= thirdXwall, building 7 innerHorWall");
+                        }
+                        //building third horizontal wall toward the intersection point
+                        if (l == thirdZwall && w < firstXwall && thirdZwall != 0 && RndChanceWallList[8] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[8].doorXpos)
+                            {
+                                BuildObj("8InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("8InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == thirdZwall && w < firstXwall, building 8 innerHorWall");
+                        }
+                        //building third horizontal wall toward the second intersection point
+                        if (l == thirdZwall && w >= firstXwall && w < secondXwall && thirdZwall != 0 && RndChanceWallList[9] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[9].doorXpos)
+                            {
+                                BuildObj("9InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("9InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            //  print("l == thirdZwall && w >= firstXwall && w < secondXwall, building 9 innerHorWall");
+                        }
+                        //building third horizontal wall toward the third intersection point
+                        if (l == thirdZwall && w >= secondXwall && w < thirdXwall && thirdZwall != 0 && RndChanceWallList[10] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[10].doorXpos)
+                            {
+                                BuildObj("10InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("10InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == thirdZwall && w >= secondXwall && w < thirdXwall, building 10 innerHorWall");
+                        }
+                        //building third horizontal wall toward after the third intersection point toward the building's outer wall
+                        if (l == thirdZwall && w >= thirdXwall && thirdZwall != 0 && thirdXwall != 0 && RndChanceWallList[11] <= roomPercentage)
+                        {
+                            if (w == innerDoorsList[11].doorXpos)
+                            {
+                                BuildObj("11InnerHorDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("11InnerHorWall", w, h, l, roomInnerWallPrefab);
+
+                            horWall = true;
+                            // print("l == thirdZwall && w >= thirdXwall, building 11 innerHorWall");
+                        }
+                       
+                        //building first vertical wall toward the first intersection point
+                        if (w == firstXwall && l < firstZwall  && RndChanceWallList[12] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[12].doorZpos)
+                            {
+                                BuildObj("0InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("0InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == firstXwall && l < firstZwall, building 12 innerVerWall");
+                        }
+                        //building first vertical wall toward the second intersection point
+                        if (w == firstXwall && l >= firstZwall && l < secondZwall &&  RndChanceWallList[13] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[13].doorZpos)
+                            {
+                                BuildObj("1InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("1InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == firstXwall && l >= firstZwall && l < secondZwall, building 13 innerVerWall");
+                        }
+                    //building first horizontal wall toward the third intersection point
+                        if (w == firstXwall && l >= secondZwall && l < thirdZwall  && RndChanceWallList[14] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[14].doorZpos)
+                            {
+                                BuildObj("2InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("2InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == firstXwall && l >= secondZwall && l < thirdZwall, building 14 innerVerWall");
+                        }
+                    //building first horizontal wall toward after the third intersection point toward the building's outer wall
+                        if (w == firstXwall && l >= thirdZwall  && thirdZwall != 0 && RndChanceWallList[15] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[15].doorZpos)
+                            {
+                                BuildObj("3InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("3InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == firstXwall && l >= thirdZwall, building 15 innerVerWall");
+                        }
+                    //building second horizontal wall toward the first intersection point
+                        if (w == secondXwall && l < firstZwall && secondXwall != 0 && secondXwall != 0 && RndChanceWallList[16] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[16].doorZpos)
+                            {
+                                BuildObj("4InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("4InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == secondXwall && l < firstZwall, building 16 innerVerWall");
+                        }
+                        //building second horizontal wall toward the second intersection point
+                        if (w == secondXwall && l >= firstZwall && l < secondZwall && secondXwall != 0 && RndChanceWallList[17] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[17].doorZpos)
+                            {
+                                BuildObj("5InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("5InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == secondXwall && l >= firstZwall && l < secondZwall, building 17 innerVerWall");
+                        }
+                        //building second horizontal wall toward the third intersection point
+                        if (w == secondXwall && l >= secondZwall && l < thirdZwall && secondXwall != 0 && RndChanceWallList[18] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[18].doorZpos)
+                            {
+                                BuildObj("6InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("6InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == secondXwall && l >= secondZwall && l < thirdZwall, building 18 innerVerWall");
+                        }
+                        //building second horizontal wall toward after the third intersection point toward the building's outer wall
+                        if (w == secondXwall && l >= thirdZwall && secondXwall != 0 && thirdZwall != 0 && RndChanceWallList[19] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[19].doorZpos)
+                            {
+                                BuildObj("7InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("7InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            //  print("w == secondXwall && l >= thirdZwall, building 19 innerVerWall");
+                        }
+                        //building third horizontal wall toward the intersection point
+                        if (w == thirdXwall && l < firstZwall && thirdXwall != 0 && RndChanceWallList[20] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[20].doorZpos)
+                            {
+                                BuildObj("8InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("8InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == thirdXwall && l < firstZwall, building 20 innerVerWall");
+                        }
+                        //building third horizontal wall toward the second intersection point
+                        if (w == thirdXwall && l >= firstZwall && l < secondZwall && thirdXwall != 0  && RndChanceWallList[21] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[21].doorZpos)
+                            {
+                                BuildObj("9InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("9InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == thirdXwall && l > firstZwall && l < secondZwall, building 21 innerVerWall");
+                        }
+                        //building third horizontal wall toward the third intersection point
+                        if (w == thirdXwall && l >= secondZwall && l < thirdZwall && thirdXwall != 0 && RndChanceWallList[22] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[22].doorZpos)
+                            {
+                                BuildObj("10InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("10InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                            // print("w == thirdXwall && l >= secondZwall && l < thirdZwall, building 22 innerVerWall");
+                        }
+                        //building third horizontal wall toward after the third intersection point toward the building's outer wall
+                        if (w == thirdXwall && l >= thirdZwall && thirdZwall != 0 && thirdXwall != 0 && RndChanceWallList[23] <= roomPercentage)
+                        {
+                            if (l == innerDoorsList[23].doorZpos)
+                            {
+                                BuildObj("11InnerVerDoor", w, h, l, roomInnerDoorPrefab);
+                            }
+                            else
+                                BuildObj("11InnerVerWall", w, h, l, roomInnerWallPrefab);
+
+                            verWall = true;
+                           // print("w == thirdXwall && l >= thirdZwall, building 23 innerVerWall");
+                        }
+                       
+                      // spawn stairs, inner floors and prefabs
+
+                        //dont create a floor at the corner, instead create stairs
+                        //stairs left back corner
+                        if (optStairs == 0 && l == 0 && w == 0)
+                        {
+                            //floor
+                            if (h == 1)
+                            {
+                                newMarker = Instantiate(roomFloorPrefab, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "floor" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                if (!randomStairs)
+                                {
+                                    GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall.transform.Rotate(-Vector3.up * 90);
+                                    allPrefabsList.Add(newWall);
+                                }
+
+                            }
+                            else if (h != roomHeight - 1)
+                            {
+                                newMarker = Instantiate(stairsModular, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight) + prefabHeight / 2 - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "stairs" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+
+                                //wall
+                                GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newWall.transform.Rotate(-Vector3.up * 90);
+                                allPrefabsList.Add(newWall);
+                                if (randomStairs)
+                                {
+                                    //wall at the bottom of the stairs
+                                    GameObject newWall2 = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight) - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall2.transform.Rotate(-Vector3.up * 90);
+                                    allPrefabsList.Add(newWall2);
+                                }
+                            }
+                           
+                        }
+                        //stairs left front corner
+                        else if (optStairs == 1 && l == roomLength - 1 && w == 0)
+                        {
+                            //floor
+                            if (h == 1)
+                            {
+                                newMarker = Instantiate(roomFloorPrefab, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "floor" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                if (!randomStairs)
+                                {
+                                    GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall.transform.Rotate(-Vector3.up * 90);
+                                    allPrefabsList.Add(newWall);
+                                }
+
+                            }
+                            else if (h != roomHeight - 1)
+                            {
+                                newMarker = Instantiate(stairsModular, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight) + prefabHeight / 2 - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "stairs" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                newMarker.transform.Rotate(Vector3.up * 180);
+
+                                //wall
+                                GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newWall.transform.Rotate(-Vector3.up * 90);
+                                allPrefabsList.Add(newWall);
+                                if (randomStairs)
+                                {
+                                    //wall at the bottom of the stairs
+                                    GameObject newWall2 = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing, randomSpot.y + (h * prefabHeight) - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall2.transform.Rotate(-Vector3.up * 90);
+                                    allPrefabsList.Add(newWall2);
+                                }
+                            }
+                           
+                        }
+                        //stairs right back corner
+                        else if (optStairs == 2 && w == roomWidth - 1 && l == 0 )
+                        {
+
+                            //floor
+                            if (h == 1)
+                            {
+                                newMarker = Instantiate(roomFloorPrefab, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "floor" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                if (!randomStairs)
+                                {
+                                    GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall.transform.Rotate(Vector3.up * 90);
+                                    allPrefabsList.Add(newWall);
+                                }
+
+                            }
+                            else if (h != roomHeight - 1)
+                            {
+                                newMarker = Instantiate(stairsModular, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight) + prefabHeight / 2 - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "stairs" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+
+                                //wall at the top of the stairs
+                                GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newWall.transform.Rotate(Vector3.up * 90);
+                                allPrefabsList.Add(newWall);
+                                if(randomStairs)
+                                {
+                                    //wall at the bottom of the stairs
+                                    GameObject newWall2 = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight) - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall2.transform.Rotate(Vector3.up * 90);
+                                    allPrefabsList.Add(newWall2);
+                                }
+                                
+                            }
+                            
+                        }
+                        //stairs right front corner
+                        else if (optStairs == 3 && l == roomLength - 1 && w == roomWidth - 1)
+                        {
+                            //floor
+                            if (h == 1)
+                            {
+                                newMarker = Instantiate(roomFloorPrefab, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "floor" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                if (!randomStairs)
+                                {
+                                    GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall.transform.Rotate(Vector3.up * 90);
+                                    allPrefabsList.Add(newWall);
+                                }
+
+                            }
+                            else if (h != roomHeight - 1) 
+                            {
+                                newMarker = Instantiate(stairsModular, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight) + prefabHeight / 2 - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newMarker.transform.parent = buildingParent.transform;
+                                newMarker.name = h + "stairs" + buildingsCreated;
+                                allPrefabsList.Add(newMarker);
+                                newMarker.transform.Rotate(Vector3.up * 180);
+                                //wall
+                                GameObject newWall = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                newWall.transform.Rotate(Vector3.up * 90);
+                                allPrefabsList.Add(newWall);
+                                if (randomStairs)
+                                {
+                                    //wall at the bottom of the stairs
+                                    GameObject newWall2 = Instantiate(roomWallPrefab, new Vector3(randomSpot.x + (w * prefabWidth) + prefabWidth * spacing - prefabWidth * 1.1f, randomSpot.y + (h * prefabHeight) - prefabHeight, randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                                    newWall2.transform.Rotate(Vector3.up * 90);
+                                    allPrefabsList.Add(newWall2);
+                                }
+                            }
+                            
+                        }
                         //--------------make floor and spawn prefabs----------------------
                         else
                         {
@@ -520,9 +1070,22 @@ public class GenerateDungeon : MonoBehaviour
                             int rndWallPrefab = Random.Range(0, wallPrefabList.Count - 1);
                             int rndChancePrefab = Random.Range(1, 101);
                             //dont spawn prefab at the door or behind/in front of the door as well as dont spawn prefabs in front of the entrance/exit doors of the building
-                                
-                                //floor prefab 
-                                if (rndChancePrefab <= prefabSpawnChance && noSpawn == false && buildingStyleList[buildingN].floorStyleList[floorN].floorPrefabs.Count >= rndFloorPrefab)
+                            for (int i = 0; i < innerDoorsList.Count; i++)
+                            {
+
+                                if (innerDoorsList[i].doorXpos == w && innerDoorsList[i].doorZpos == l ||
+                                    innerDoorsList[i].doorXpos == w + 1 && innerDoorsList[i].doorZpos == l && innerDoorsList[i].name.Contains("l") ||
+                                    innerDoorsList[i].doorXpos == w && innerDoorsList[i].doorZpos == l + 1 && innerDoorsList[i].name.Contains("w") ||
+                                    entranceDoorZ == l && w == 1 || exitDoorX == w && exitDoorZ == l)
+                                    noSpawn = true;
+                                    
+                            }
+                           
+                                //floor
+                                newMarker = Instantiate(roomFloorPrefab, new Vector3(randomSpot.x + (w * prefabWidth), randomSpot.y + (h * prefabHeight), randomSpot.z + (l * prefabWidth)), Quaternion.identity);
+                         
+                                //prefab 
+                                if (rndChancePrefab <= prefabSpawnChance && noSpawn == false && horWall == false && verWall == false && buildingStyleList[buildingN].floorStyleList[floorN].floorPrefabs.Count >= rndFloorPrefab)
                                 {
                                     float fx_offset = buildingStyleList[buildingN].floorStyleList[floorN].floorPrefabs[rndFloorPrefab].x_offset;
                                     float fy_offset = buildingStyleList[buildingN].floorStyleList[floorN].floorPrefabs[rndFloorPrefab].y_offset;
@@ -533,15 +1096,9 @@ public class GenerateDungeon : MonoBehaviour
 
                                     if (random_rotate)
                                         newPrefab.transform.Rotate(Vector3.up * Random.Range(0, 359));
-
-  
-                                newPrefab.transform.parent = buildingParent.transform;
-                                allPrefabsList.Add(newPrefab);
-
-
-                            }
+                                }
                                 //if we spawn a prefab at the wall, rotate the obj 90* to align with the wall
-                                else if (noSpawn == false && buildingStyleList[buildingN].floorStyleList[floorN].wallPrefabs.Count >= rndWallPrefab)
+                                else if (rndChancePrefab <= prefabSpawnChance && noSpawn == false && buildingStyleList[buildingN].floorStyleList[floorN].wallPrefabs.Count >= rndWallPrefab)
                                 {
                                     float wx_offset = buildingStyleList[buildingN].floorStyleList[floorN].wallPrefabs[rndWallPrefab].x_offset;
                                     float wy_offset = buildingStyleList[buildingN].floorStyleList[floorN].wallPrefabs[rndWallPrefab].y_offset;
@@ -550,26 +1107,16 @@ public class GenerateDungeon : MonoBehaviour
 
                                     if (horWall)
                                     {
-                                    int rndChanceFront = Random.Range(1, 101);
-                                    int rndChanceBack = Random.Range(1, 101);
-
-                                    if(rndChancePrefab <= prefabSpawnChance)
-                                    {
-                                        GameObject frontPrefabHWall = Instantiate(wallPrefabList[rndWallPrefab], new Vector3(randomSpot.x + (w * prefabWidth) + wx_offset, randomSpot.y + (h * prefabHeight) + wy_offset, randomSpot.z + (l * prefabWidth) + wz_offset + prefabDepth), Quaternion.identity);
-                                        print("placing wall prefab on horizontal wall, the prefab is: " + frontPrefabHWall.name + ". Its located at: " + frontPrefabHWall.transform.position);
-                                        frontPrefabHWall.name = "Wall_H_" + frontPrefabHWall.name;
-                                        frontPrefabHWall.transform.parent = buildingParent.transform;
-                                        allPrefabsList.Add(frontPrefabHWall);
+                                        newPrefab = Instantiate(wallPrefabList[rndWallPrefab], new Vector3(randomSpot.x + (w * prefabWidth) + wx_offset, randomSpot.y + (h * prefabHeight) + wy_offset, randomSpot.z + (l * prefabWidth) + wz_offset), Quaternion.identity);
                                         if (flip_rotate)
-                                        {
-                                            frontPrefabHWall.transform.Rotate(Vector3.up * 90);
-                                        }
-
+                                            newPrefab.transform.Rotate(Vector3.up * 90);
                                     }
-
-                                    }
-
-
+                                    else if (verWall)
+                                    {
+                                        newPrefab = Instantiate(wallPrefabList[rndWallPrefab], new Vector3(randomSpot.x + (w * prefabWidth) + wx_offset, randomSpot.y + (h * prefabHeight) + wy_offset, randomSpot.z + (l * prefabWidth) + wz_offset), Quaternion.identity);
+                                        newPrefab.transform.Rotate(Vector3.up * 90);
+                                        if (flip_rotate)
+                                            newPrefab.transform.Rotate(Vector3.up * 90);
                                     }
                                 }
                                 
@@ -577,12 +1124,23 @@ public class GenerateDungeon : MonoBehaviour
                             newMarker.transform.parent = buildingParent.transform;
                             newMarker.name = h + "floor" + buildingsCreated;
                             allPrefabsList.Add(newMarker);
+
+                            if (newPrefab != null)
+                            {
+                                newPrefab.transform.parent = buildingParent.transform;
+                                newPrefab.name = h + newPrefab.name + buildingsCreated;
+                                allPrefabsList.Add(newPrefab);
+                            }
                             
                         }
                         noSpawn = false;
                         horWall = false;
                         verWall = false;
                     }
+                    oldIntW = wallIntersectionW;
+                    oldIntL = wallIntersectionL;
+                    
+
 
                 }
             }
@@ -598,7 +1156,7 @@ public class GenerateDungeon : MonoBehaviour
         //depending on the layout create mini rooms with walls and doors
         //generate objects on free/buildable spots
         //depending on size, objet can be attached to walls,corners if small enough (less than half of prefabWidth)
-
+        buildingsCreated++;
     }
   
 
